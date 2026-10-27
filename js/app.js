@@ -36,7 +36,7 @@
     const panels = { hanja: document.getElementById('panel-hanja'), count: document.getElementById('panel-count') };
 
     function select(name, focus) {
-        if (!panels[name]) name = 'hanja';
+        if (!panels[name]) name = 'count';
         tabs.forEach(t => {
             const on = t.dataset.tab === name;
             t.setAttribute('aria-selected', String(on));
@@ -44,7 +44,7 @@
             if (on && focus) t.focus();
         });
         Object.entries(panels).forEach(([k, el]) => { el.hidden = k !== name; });
-        try { history.replaceState(null, '', name === 'hanja' ? location.pathname + location.search : '#' + name); } catch (e) { /* file:// 등 */ }
+        try { history.replaceState(null, '', name === 'count' ? location.pathname + location.search : '#' + name); } catch (e) { /* file:// 등 */ }
     }
 
     tabs.forEach((t, i) => {
@@ -56,7 +56,7 @@
         });
     });
 
-    select(location.hash.replace('#', ''));
+    select(location.hash.replace('#', '') || (location.search.includes('sample') ? 'hanja' : ''));
     window.addEventListener('hashchange', () => select(location.hash.replace('#', '')));
 
     if (window.lucide) lucide.createIcons();
