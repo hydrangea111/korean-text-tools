@@ -3,387 +3,154 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>지능형 한자-한글 상호 변환기</title>
+    <title>한자 변환 · 글자수 세기</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Crect%20width='64'%20height='64'%20rx='14'%20fill='%232563eb'/%3E%3Ctext%20x='32'%20y='42'%20font-size='34'%20font-weight='700'%20text-anchor='middle'%20fill='white'%20font-family='Malgun%20Gothic%2CApple%20SD%20Gothic%20Neo%2CNoto%20Sans%20KR%2Csans-serif'%3E%EA%B0%80%3C/text%3E%3Cpath%20d='M14%2052h36M14%2049v6M26%2050.5v3M38%2050.5v3M50%2049v6'%20stroke='%23bfdbfe'%20stroke-width='2'%20stroke-linecap='round'/%3E%3C/svg%3E">
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.1.8"></script>
+    <script src="https://unpkg.com/lucide@0.460.0"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+    <link rel="stylesheet" href="css/app.css">
 </head>
-<body class="max-w-6xl mx-auto p-6 bg-gradient-to-br from-slate-50 to-blue-50 min-h-screen font-sans">
+<body class="max-w-6xl mx-auto p-4 md:p-6 bg-gradient-to-br from-slate-50 to-blue-50 min-h-screen font-sans">
 
-    <div class="bg-white rounded-2xl shadow-xl p-6 md:p-8 mt-4">
-        
-        <div class="text-center mb-8">
-            <h1 class="text-3xl font-extrabold text-slate-800 mb-2">
-                지능형 한자-한글 상호 변환기
-            </h1>
-            <p class="text-slate-500 text-sm">
-                두 가지 이상의 음을 가진 한자(다음자)가 나타나면 노란색으로 표시되며, 클릭하여 직접 알맞은 음을 고를 수 있습니다.
-            </p>
-        </div>
+    <div class="bg-white rounded-2xl shadow-xl p-5 md:p-8 mt-2 md:mt-4">
 
-        <div class="flex justify-center mb-8">
-            <button id="toggleBtn" class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium px-5 py-2.5 rounded-full shadow-md transition-all active:scale-95 cursor-pointer">
-                <i data-lucide="arrow-left-right" class="w-4 h-4"></i>
-                <span id="modeStatus">한자 ➔ 한글</span>
+        <div role="tablist" aria-label="기능 선택" class="flex justify-center gap-2 mb-8">
+            <button role="tab" id="tab-hanja" data-tab="hanja" aria-controls="panel-hanja" class="tab-btn">
+                <i data-lucide="languages" class="w-4 h-4"></i> 한자 변환
+            </button>
+            <button role="tab" id="tab-count" data-tab="count" aria-controls="panel-count" class="tab-btn">
+                <i data-lucide="ruler" class="w-4 h-4"></i> 글자수 · 바이트
             </button>
         </div>
 
-        <div class="mb-8">
-            <div id="dropZone" class="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center hover:bg-slate-50 hover:border-blue-400 transition-all cursor-pointer group">
-                <input type="file" id="fileInput" accept=".docx,.txt" class="hidden">
-                <i data-lucide="upload" class="mx-auto mb-2 text-slate-400 group-hover:text-blue-500 transition-colors w-9 h-9"></i>
-                <p class="text-sm font-semibold text-slate-700">클릭하여 문서 파일 업로드 (.txt, .docx)</p>
-                <div id="fileInfo" class="mt-3 hidden inline-flex items-center gap-1.5 px-3 py-1 bg-green-50 text-green-700 rounded-full text-xs font-medium">
-                    <i data-lucide="file-text" class="w-3.5 h-3.5"></i> <span id="fileNameDisplay"></span>
-                </div>
-            </div>
-        </div>
-
-        <div class="grid md:grid-cols-2 gap-6">
-            <div class="flex flex-col">
-                <label class="text-sm font-bold text-slate-700 mb-2 flex justify-between items-center">
-                    <span id="inputLabel">원본 한자 입력</span>
-                    <button id="clearBtn" class="text-xs font-normal text-slate-400 hover:text-rose-500 flex items-center gap-1 cursor-pointer">
-                        <i data-lucide="trash-2" class="w-3 h-3"></i> 비우기
-                    </button>
-                </label>
-                <textarea id="inputText" placeholder="여기에 텍스트를 입력하거나 문서를 업로드 하세요..." class="w-full h-80 p-4 border border-slate-200 rounded-xl font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-slate-50/50 resize-none"></textarea>
+        <!-- ===== 한자 변환 ===== -->
+        <section id="panel-hanja" role="tabpanel" aria-labelledby="tab-hanja">
+            <div class="text-center mb-6">
+                <h1 class="text-2xl md:text-3xl font-extrabold text-slate-800 mb-2">지능형 한자-한글 상호 변환기</h1>
+                <p id="hanjaHelp" class="text-slate-500 text-sm"></p>
             </div>
 
-            <div class="flex flex-col">
-                <div class="text-sm font-bold text-slate-700 mb-2 flex justify-between items-center">
-                    <span>실시간 변환 및 독음 선택 결과</span>
-                    <div class="flex gap-2">
-                        <button id="copyBtn" disabled class="text-xs bg-slate-100 hover:bg-slate-200 disabled:opacity-40 disabled:cursor-not-allowed text-slate-700 font-medium px-3 py-1 rounded-md flex items-center gap-1 cursor-pointer">
-                            <i data-lucide="copy" class="w-3 h-3"></i> 복사
-                        </button>
-                        <button id="downloadBtn" disabled class="text-xs bg-slate-100 hover:bg-slate-200 disabled:opacity-40 disabled:cursor-not-allowed text-slate-700 font-medium px-3 py-1 rounded-md flex items-center gap-1 cursor-pointer">
-                            <i data-lucide="download" class="w-3 h-3"></i> 다운로드
-                        </button>
+            <div class="flex flex-wrap justify-center items-center gap-4 mb-6">
+                <button id="toggleBtn" class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium px-5 py-2.5 rounded-full shadow-md transition-all active:scale-95 cursor-pointer">
+                    <i data-lucide="arrow-left-right" class="w-4 h-4"></i>
+                    <span id="modeStatus">한자 ➔ 한글</span>
+                </button>
+            </div>
+
+            <div class="mb-6">
+                <div id="dropZone" tabindex="0" role="button" aria-label="문서 파일 업로드" class="border-2 border-dashed border-slate-300 rounded-xl p-5 text-center hover:bg-slate-50 hover:border-blue-400 transition-all cursor-pointer group">
+                    <input type="file" id="fileInput" accept=".docx,.txt" class="hidden">
+                    <i data-lucide="upload" class="mx-auto mb-2 text-slate-400 group-hover:text-blue-500 transition-colors w-8 h-8"></i>
+                    <p class="text-sm font-semibold text-slate-700">클릭하거나 끌어다 놓아 문서 업로드 (.txt, .docx)</p>
+                    <div id="fileInfo" hidden class="mt-3 inline-flex items-center gap-1.5 px-3 py-1 bg-green-50 text-green-700 rounded-full text-xs font-medium">
+                        <i data-lucide="file-text" class="w-3.5 h-3.5"></i> <span id="fileNameDisplay"></span>
                     </div>
                 </div>
-                
-                <div id="outputArea" class="w-full h-80 p-4 border border-slate-200 rounded-xl font-mono text-sm bg-slate-50 overflow-y-auto whitespace-pre-wrap leading-relaxed select-text">
-                    <span class="text-slate-400">텍스트를 입력하시면 변환 결과가 실시간으로 나타납니다.</span>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-6">
+                <div class="flex flex-col">
+                    <label for="inputText" class="text-sm font-bold text-slate-700 mb-2 flex justify-between items-center">
+                        <span id="inputLabel">원본 한자 입력</span>
+                        <span class="flex gap-3">
+                            <button id="sampleBtn" type="button" class="text-xs font-normal text-slate-400 hover:text-blue-600 cursor-pointer">예시 넣기</button>
+                            <button id="clearBtn" type="button" class="text-xs font-normal text-slate-400 hover:text-rose-500 flex items-center gap-1 cursor-pointer">
+                                <i data-lucide="trash-2" class="w-3 h-3"></i> 비우기
+                            </button>
+                        </span>
+                    </label>
+                    <textarea id="inputText" placeholder="여기에 텍스트를 입력하거나 문서를 업로드 하세요..." class="w-full h-80 p-4 border border-slate-200 rounded-xl font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-slate-50/50 resize-none"></textarea>
+                </div>
+
+                <div class="flex flex-col">
+                    <div class="text-sm font-bold text-slate-700 mb-2 flex justify-between items-center">
+                        <span id="outputLabel">실시간 변환 및 독음 선택 결과</span>
+                        <div class="flex gap-2">
+                            <button id="copyBtn" disabled class="text-xs bg-slate-100 hover:bg-slate-200 disabled:opacity-40 disabled:cursor-not-allowed text-slate-700 font-medium px-3 py-1 rounded-md flex items-center gap-1 cursor-pointer">
+                                <i data-lucide="copy" class="w-3 h-3"></i> 복사
+                            </button>
+                            <button id="downloadBtn" disabled class="text-xs bg-slate-100 hover:bg-slate-200 disabled:opacity-40 disabled:cursor-not-allowed text-slate-700 font-medium px-3 py-1 rounded-md flex items-center gap-1 cursor-pointer">
+                                <i data-lucide="download" class="w-3 h-3"></i> 다운로드
+                            </button>
+                        </div>
+                    </div>
+                    <div id="outputArea" aria-live="polite" class="w-full h-80 p-4 border border-slate-200 rounded-xl font-mono text-sm bg-slate-50 overflow-y-auto whitespace-pre-wrap leading-relaxed select-text"></div>
+                    <p id="convertNote" class="mt-2 text-xs text-slate-500 min-h-4"></p>
                 </div>
             </div>
-        </div>
 
-        <div class="mt-6 bg-amber-50 rounded-xl p-4 border border-amber-200 text-xs text-amber-800">
-            <strong>💡 다음자 선택 팁:</strong> 변환 결과 본문 중 <span class="bg-amber-200 px-1 rounded font-bold">노란색 버블</span>로 감싸진 글자들은 두 개 이상의 독음을 가진 글자입니다. 클릭을 통해 문맥에 맞는 올바른 소리로 변경할 수 있으며, 최종 수정본 상태 그대로 복사 및 다운로드가 가능합니다.
-        </div>
+            <div id="tipBox" class="mt-6 bg-amber-50 rounded-xl p-4 border border-amber-200 text-xs text-amber-800"></div>
+        </section>
 
+        <!-- ===== 글자수 · 바이트 ===== -->
+        <section id="panel-count" role="tabpanel" aria-labelledby="tab-count" hidden>
+            <div class="text-center mb-6">
+                <h1 class="text-2xl md:text-3xl font-extrabold text-slate-800 mb-2">글자수 · 바이트 세기</h1>
+                <p class="text-slate-500 text-sm">나이스(NEIS)식과 EUC-KR(기업)식 바이트를 동시에 계산합니다.</p>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-6">
+                <div class="flex flex-col">
+                    <label for="countInput" class="text-sm font-bold text-slate-700 mb-2 flex justify-between items-center">
+                        <span>내용 입력</span>
+                        <span class="flex gap-3">
+                            <button id="countFileBtn" type="button" class="text-xs font-normal text-slate-400 hover:text-blue-600 flex items-center gap-1 cursor-pointer">
+                                <i data-lucide="upload" class="w-3 h-3"></i> 파일 불러오기
+                            </button>
+                            <button id="countClearBtn" type="button" class="text-xs font-normal text-slate-400 hover:text-rose-500 flex items-center gap-1 cursor-pointer">
+                                <i data-lucide="trash-2" class="w-3 h-3"></i> 비우기
+                            </button>
+                        </span>
+                    </label>
+                    <input type="file" id="countFileInput" accept=".docx,.txt" class="hidden">
+                    <textarea id="countInput" placeholder="글자수와 바이트를 셀 내용을 붙여 넣으세요..." class="w-full h-80 p-4 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-slate-50/50 resize-none"></textarea>
+                </div>
+
+                <div class="flex flex-col gap-4">
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="stat-card"><div class="stat-label">글자수 (공백 포함)</div><div id="statChars" class="stat-value">0</div></div>
+                        <div class="stat-card"><div class="stat-label">글자수 (공백 제외)</div><div id="statCharsNoSpace" class="stat-value">0</div></div>
+                        <div class="stat-card stat-primary"><div class="stat-label">나이스식 바이트</div><div class="stat-value"><span id="statNeis">0</span><span class="stat-unit">byte</span></div><div class="stat-hint">한글·한자 3 · 영문·숫자·기호·공백 1</div></div>
+                        <div class="stat-card stat-primary"><div class="stat-label">EUC-KR식 바이트</div><div class="stat-value"><span id="statEuckr">0</span><span class="stat-unit">byte</span></div><div class="stat-hint">한글·한자 2 · 영문·숫자·기호·공백 1</div></div>
+                    </div>
+                    <div class="stat-card"><div class="stat-label">줄 수</div><div id="statLines" class="stat-value">0</div></div>
+
+                    <label class="flex items-center gap-2 text-sm text-slate-600 cursor-pointer select-none">
+                        <input type="checkbox" id="lbTwo" checked class="accent-blue-600 w-4 h-4">
+                        줄바꿈(엔터)을 2바이트로 계산 <span class="text-slate-400">(해제하면 1바이트)</span>
+                    </label>
+
+                    <div class="border border-slate-200 rounded-xl p-4">
+                        <div class="flex flex-wrap items-center gap-2 text-sm text-slate-700 mb-3">
+                            <span class="font-bold">제한 확인</span>
+                            <select id="limitBasis" class="border border-slate-200 rounded-md px-2 py-1 text-sm bg-white">
+                                <option value="neis">나이스식</option>
+                                <option value="euckr">EUC-KR식</option>
+                            </select>
+                            <input type="number" id="limitValue" min="1" step="1" placeholder="제한 byte" class="w-28 border border-slate-200 rounded-md px-2 py-1 text-sm">
+                            <span id="limitText" class="text-slate-500"></span>
+                        </div>
+                        <div class="h-2 rounded-full bg-slate-100 overflow-hidden"><div id="limitBar" class="h-full w-0 bg-blue-500 transition-all"></div></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-6 bg-slate-50 rounded-xl p-4 border border-slate-200 text-xs text-slate-600 leading-relaxed">
+                <strong>계산 기준</strong><br>
+                · 글자수는 이모지도 1글자로 세며, 줄바꿈은 1글자입니다.<br>
+                · 나이스식: ASCII 외의 문자는 UTF-8 길이(한글·한자 3바이트)로 계산합니다.<br>
+                · EUC-KR식: ASCII 외의 문자는 모두 2바이트로 계산합니다. EUC-KR에 없는 문자(이모지 등)도 2바이트로 셉니다.<br>
+                · 공식 기재요령에 바이트 규정이 없어 UTF-8 기준을 따랐습니다. 가운뎃점(·)·원문자(①) 같은 기호는 실제 나이스 화면의 바이트 표시와 다를 수 있으니 제출 전에 확인하세요.
+            </div>
+        </section>
     </div>
 
-    <script>
-        // 데이터 사전 정의
-        const MULTI_HANJA_DICT = {
-            '樂': ['악', '락', '요'], '索': ['삭', '색'], '度': ['탁', '도'], '見': ['견', '현'],
-            '降': ['강', '항'], '車': ['차', '거'], '宅': ['택', '댁'], '參': ['삼', '참'],
-            '切': ['절', '체'], '暴': ['폭', '포']
-        };
+    <div id="toast" role="status" class="toast" hidden></div>
 
-        const HANJA_DICT = {
-            '가': '佳街加歌家價假架駕架柯暇哥枷佳街街', '각': '各角脚刻覺珏閣却', '간': '間看干刊幹懇簡肝墾諫', '갈': '渴渴葛',
-            '감': '感減監鑑甘敢堪坎勘', '갑': '岬甲', '강': '强江講鋼綱剛康疆剛', '개': '開改個皆慨概개蓋箇', '객': '客',
-            '갱': '更', '거': '去居巨擧距拒據車', '건': '建乾件健巾', '걸': '傑乞', '검': '檢劍儉',
-            '격': '格擊激隔激', '견': '見堅犬絹遣', '결': '結決潔缺', '겸': '兼謙', '경': '京景經慶競境耕敬輕驚頃硬庚警径卿',
-            '계': '計季界契溪階鷄系繼戒啓系', '고': '高苦古考告顧鼓孤固庫姑考稿雇', '곡': '谷曲哭穀', '곤': '困坤',
-            '골': '骨', '공': '空共公工功恐攻貢恭公', '과': '果科過課跨誇寡禍', '곽': '郭', '관': '官觀關管貫慣冠寬館',
-            '광': '光廣鑛狂', '괘': '掛', '괴': '怪塊壞愧', '교': '交校敎橋郊較巧咬', '구': '九區求球口句舊久具俱究構購驅舅丘仇',
-            '국': '國局鞠菊', '군': '軍郡君', '굴': '屈掘', '궁': '宮弓窮', '권': '權券勸卷', '궐': '厥',
-            '궤': '軌', '귀': '貴歸鬼', '규': '規糾叫', '균': '均菌', '귤': '橘', '극': '極劇克',
-            '근': '近根勤僅斤謹', '글': '契', '금': '金今禁錦禽琴襟', '급': '急給級及', '긍': '肯', '기': '氣記期基其奇幾技旣己欺旗器忌寄飢機妓肌紀騎',
-            '긴': '緊', '길': '吉', '김': '金', '나': '那羅奈', '낙': '落樂諾', '난': '難暖亂欄蘭',
-            '남': '南男', '납': '納', '낭': '娘浪', '내': '內內乃奈', '냉': '冷', '녀': '女',
-            '년': '年', '념': '念', '녕': '寧', '노': '老勞怒奴路露', '농': '農濃', '뇌': '腦惱',
-            '능': '能', '니': '泥', '다': '多茶', '단': '端短斷單團壇但段旦', '달': '達', '담': '談擔湛淡墻',
-            '답': '答踏', '당': '堂當黨糖', '대': '大代代對待帶臺貸隊大', '댁': '宅', '덕': '德', '도': '道度導都圖島到度挑塗逃盜渡刀悼',
-            '독': '讀獨毒督', '돈': '敦頓豚', '돌': '突', '동': '同動東童冬洞銅凍瞳', '두': '頭豆斗杜', '둔': '鈍屯',
-            '득': '得', '등': '等登燈等', '라': '羅羅', '락': '落樂', '란': '難欄', '람': '覽藍',
-            '랑': '郞浪', '래': '來', '랭': '冷', '략': '略', '량': '양량裝量良凉糧', '려': '旅麗慮',
-            '력': '力歷曆', '련': '連練聯蓮', '렬': '列烈劣', '렴': '廉', '령': '領令嶺零', '례': '例禮',
-            '로': '路老勞露爐', '록': '綠錄鹿', '론': '論', '롱': '弄', '뢰': '雷賴', '료': '料療',
-            '룡': '龍', '루': '樓淚漏', '류': '流類留柳', '륙': '陸六', '륜': '倫輪', '률': '律率',
-            '륭': '隆', '릉': '陵', '리': '理利理裏吏履離梨', '린': '隣', '림': '林臨', '립': '立',
-            '마': '馬麻摩', '막': '幕莫漠', '만': '萬滿慢漫晩灣埋', '말': '末', '망': '亡忙忘望網茫', '매': '買賣每妹梅媒',
-            '맥': '麥脈', '맹': '盟盲猛', '면': '面勉免綿眠', '멸': '滅', '명': '名明命鳴銘', '모': '母毛暮模某謀募帽侮',
-            '목': '木目牧', '몰': '沒', '몽': '夢', '묘': '妙墓苗描', '무': '無務武舞茂誣', '묵': '默墨',
-            '문': '問聞文門', '물': '勿물', '미': '美微未迷味尾眉米', '민': '民敏憫', '밀': '密', '박': '朴博拍迫駁薄박',
-            '반': '半反班般飯頒伴', '발': '發拔髮', '방': '方放訪房防妨傍芳', '배': '拜配倍培輩舟排', '백': '百白伯',
-            '번': '番煩繁飜', '벌': '伐罰', '범': '犯範凡汎', '법': '法', '벽': '壁碧', '변': '變邊辯',
-            '별': '別', '병': '病兵丙竝屛', '보': '步保報寶普補譜', '복': '福伏服復複卜', '본': '本', '볼': '乶',
-            '봉': '奉逢峰封鳳蜂', '부': '不部夫父富扶浮負副婦赴附否', '북': '北', '분': '分粉奔憤雰', '불': '佛弗',
-            '붕': '朋崩', '비': '非備比費悲鼻秘卑批評', '빈': '貧賓頻', '빙': '氷聘', '사': '事社使四史思死謝伺司沙射寫査捨斜詞詐絲',
-            '삭': '削', '산': '山産算散', '살': '殺', '삼': '三', '상': '上相常賞商傷想像狀裳詳',
-            '새': '塞', '색': '色', '생': '生', '서': '書西序庶徐署誓敍逝鼠', '석': '石席夕釋昔',
-            '선': '善選先線船鮮扇仙宣旋', '설': '說雪設舌', '섭': '涉攝', '성': '成性聖聲星盛誠姓城', '세': '世歲洗稅細勢',
-            '소': '小少所消訴笑素召昭掃騷', '속': '速續俗屬', '손': '孫損', '송': '松送訟誦', '쇄': '刷鎖',
-            '쇠': '衰', '수': '水手受授首守修數誰隨需遂收秀樹獸睡眠', '숙': '宿淑熟叔', '순': '順純旬巡殉盾', '술': '術述',
-            '숭': '崇', '습': '習拾濕襲', '승': '承勝乘昇', '시': '時市示視詩施始試是矢柴', '식': '食式息識植',
-            '신': '新臣信神身申辛伸愼', '실': '實室失', '심': '心深甚審', '십': '十', '쌍': '雙', '아': '兒亞我牙芽雅餓阿',
-            '악': '惡樂岳握', '안': '安案眼顔', '알': '謁', '암': '암岩暗巖', '압': '壓押', '앙': '仰央殃',
-            '애': '愛哀涯埃', '액': '額厄', '앵': '櫻', '야': '夜野也耶', '약': '藥弱約若', '양': '양양養讓量良洋陽樣羊',
-            '어': '語漁於魚御', '억': '億憶抑', '언': '言', '얼': '蘖', '엄': '嚴', '업': '業', '엔': '엔',
-            '여': '與如餘汝輿余', '역': '役易歷驛力逆', '연': '然演連硏延煙緣軟宴', '열': '熱列閱劣', '염': '炎染鹽',
-            '엽': '葉', '영': '英永迎營影榮映', '예': '例禮豫藝銳譽預', '오': '五午誤吾悟傲烏', '옥': '玉屋獄',
-            '온': '溫穩', '옹': '翁', '와': '瓦臥渦', '완': '完緩玩', '왕': '王往', '왜': '倭', '외': '外畏',
-            '요': '要料搖腰遙曜', '욕': '欲욕辱', '용': '用容勇湧', '우': '宇羽優友又牛偶遇憂雨右', '욱': '郁',
-            '운': '運雲韻', '울': '鬱', '웅': '雄', '원': '元原員院願遠源園圓怨援', '월': '月越', '위': '位委威危爲僞圍衛慰',
-            '유': '有由留遺遊乳唯裕維幽猶悠', '육': '肉育', '윤': '潤輪尹', '율': '律率', '융': '融', '은': '銀恩隱',
-            '을': '乙', '음': '音飮陰淫', '응': '應凝', '의': '衣意醫議依義疑儀宜擬', '이': '二以已異移理利耳而爾', '익': '益翼',
-            '인': '人印因引仁忍認姻', '일': '일', '임': '任林賃', '입': '入', '잉': '剩', '자': '自子者字姿慈煮姉',
-            '작': '作昨灼爵', '잔': '殘', '잠': '潛暫', '잡': '雜', '장': '長場張將章裝掌葬醬', '재': '才財在再災裁載宰',
-            '쟁': '爭', '저': '著貯低底箸猪', '적': '적的赤敵積適寂跡滴籍', '전': '前全田展戰傳電錢專典剪', '절': '節切折絶',
-            '점': '點占店漸', '접': '接蝶', '정': '定情政正靜精頂停整廷正庭', '제': '諸第題提際除制製劑祭弟', '조': '朝造調組照早助鳥操祖條粗',
-            '족': '族足', '존': '存尊', '졸': '卒拙', '종': '終種宗鍾從縱', '좌': '座坐Left', '죄': '罪', '주': '主注住週酒周株奏洲宙鑄',
-            '죽': '竹', '준': '準遵', '줄': '줄', '중': '중中重衆', '즉': '卽', '증': '增證曾症蒸', '지': '地持指知志止之紙至枝脂',
-            '직': '職直織', '진': '眞進陣振震珍塵鎭', '질': '質疾秩', '집': '集執輯', '징': '徵', '차': '次此借差',
-            '착': '着錯捉', '찬': '贊讚餐', '찰': '察札', '참': '參慘慙', '창': '創窓倉昌唱', '채': '菜採債彩',
-            '책': '策冊責', '처': '處妻', '척': '尺隻戚拓', '천': '天川千泉淺賤', '철': '鐵哲徹', '첨': '尖添',
-            '첩': '牒', '청': '靑聽淸請廳', '체': '體滯替諦', '초': '初草招焦秒礎肖', '촉': '觸促', '촌': '村寸',
-            '총': '總聰銃', '최': '最催', '추': '秋追推趨', '축': '祝蓄築縮畜', '춘': '春', '출': '出', '충': '忠充蟲',
-            '취': '取聚就臭醉趣', '측': '側測', '층': '層', '치': '治置齒致恥稚', '칙': '則', '친': '親',
-            '칠': '칠漆', '침': '針沈侵枕', '칭': '稱', '쾌': '快', '타': '他打墮妥', '탁': '卓託濯', '탄': '彈炭誕呑',
-            '탈': '脫', '탐': '探貪', '탑': '塔', '탕': '탕', '태': '泰太態怠胎', '택': '擇', '토': '土討吐',
-            '통': '通統痛', '퇴': '退', '투': '投透鬪', '특': '特', '틈': '틈', '파': '破波派罷把', '판': '判板版販',
-            '팔': '八', '패': '敗貝牌', '편': '便片編偏篇', '평': '平評', '폐': '閉弊廢肺', '포': '布包捕抱泡砲',
-            '폭': '暴爆幅', '표': '表票標', '품': '品', '풍': '風豊', '피': '皮彼被避', '필': '必筆畢匹', '하': '하下何夏賀河',
-            '학': '學鶴', '한': '韓漢限寒恨閑', '할': '割', '함': '含陷', '합': '合', '항': '港航抗項',
-            '해': '해海解害該偕', '핵': '核', '행': '行幸', '향': '向香鄕享', '허': '許虛', '헌': '憲獻',
-            '험': '驗險', '혁': '革', '현': '現賢縣顯玄', '혈': '血穴', '혐': '嫌', '협': '協狹',
-            '형': '形兄刑亨螢衡', '혜': '惠慧', '호': '戶好湖呼護號豪', '혹': '或惑', '혼': '婚混昏', '홀': '忽',
-            '홍': '紅洪', '화': '化火話華และ화畵', '확': '確擴', '환': '환換歡丸環患', '활': '活', '황': '黃皇荒況',
-            '회': '會回悔繪', '획': '獲劃', '효': '孝效曉', '후': '後候厚侯', '훈': '訓', '훼': '毁',
-            '휘': '揮輝', '휴': '休携', '흉': '凶胸'
-        };
-
-        const COMPILED_HANJA_MAP = {};
-        Object.entries(HANJA_DICT).forEach(([hangul, hanjaStr]) => {
-            for (let char of hanjaStr) {
-                COMPILED_HANJA_MAP[char] = hangul;
-            }
-        });
-
-        // 상태 관리 변수
-        let conversionMode = 'hanja-to-hangul'; // 'hanja-to-hangul' | 'hangul-to-hanja'
-        let structuredResults = [];
-        let currentFileName = '';
-
-        // DOM 요소 캐싱
-        const toggleBtn = document.getElementById('toggleBtn');
-        const modeStatus = document.getElementById('modeStatus');
-        const inputLabel = document.getElementById('inputLabel');
-        const inputText = document.getElementById('inputText');
-        const outputArea = document.getElementById('outputArea');
-        const clearBtn = document.getElementById('clearBtn');
-        const copyBtn = document.getElementById('copyBtn');
-        const downloadBtn = document.getElementById('downloadBtn');
-        const dropZone = document.getElementById('dropZone');
-        const fileInput = document.getElementById('fileInput');
-        const fileInfo = document.getElementById('fileInfo');
-        const fileNameDisplay = document.getElementById('fileNameDisplay');
-
-        // 초기화 아이콘 렌더링
-        lucide.createIcons();
-
-        // 모드 전환
-        toggleBtn.addEventListener('click', () => {
-            conversionMode = (conversionMode === 'hanja-to-hangul') ? 'hangul-to-ja' : 'hanja-to-hangul';
-            modeStatus.textContent = (conversionMode === 'hanja-to-hangul') ? '한자 ➔ 한글' : '한글 ➔ 한자';
-            inputLabel.textContent = (conversionMode === 'hanja-to-hangul') ? '원본 한자 입력' : '원본 한글 입력';
-            processConversion();
-        });
-
-        // 텍스트 실시간 변환 추적
-        inputText.addEventListener('input', processConversion);
-
-        // 변환 프로세스 핵심 로직
-        function processConversion() {
-            const text = inputText.value;
-            if (!text) {
-                structuredResults = [];
-                outputArea.innerHTML = '<span class="text-slate-400">텍스트를 입력하시면 변환 결과가 실시간으로 나타납니다.</span>';
-                copyBtn.disabled = true;
-                downloadBtn.disabled = true;
-                return;
-            }
-
-            structuredResults = [];
-
-            if (conversionMode === 'hanja-to-hangul') {
-                for (let i = 0; i < text.length; i++) {
-                    const char = text[i];
-                    if (/[\u4e00-\u9fff]/.test(char)) {
-                        if (MULTI_HANJA_DICT[char]) {
-                            structuredResults.push({
-                                id: `hanja-${i}-${char}`,
-                                type: 'multi',
-                                origin: char,
-                                selectedReading: MULTI_HANJA_DICT[char][0],
-                                options: MULTI_HANJA_DICT[char]
-                            });
-                        } else {
-                            structuredResults.push({
-                                id: `hanja-${i}-${char}`,
-                                type: 'normal',
-                                origin: char,
-                                selectedReading: COMPILED_HANJA_MAP[char] || char
-                            });
-                        }
-                    } else {
-                        structuredResults.push({
-                            id: `text-${i}`,
-                            type: 'plain',
-                            origin: char,
-                            selectedReading: char
-                        });
-                    }
-                }
-            } else {
-                for (let i = 0; i < text.length; i++) {
-                    const char = text[i];
-                    if (/[\uac00-\ud7a3]/.test(char)) {
-                        const targetHanjaList = HANJA_DICT[char];
-                        structuredResults.push({
-                            id: `hangul-${i}-${char}`,
-                            type: 'normal',
-                            origin: char,
-                            selectedReading: targetHanjaList ? targetHanjaList[0] : char
-                        });
-                    } else {
-                        structuredResults.push({
-                            id: `text-${i}`,
-                            type: 'plain',
-                            origin: char,
-                            selectedReading: char
-                        });
-                    }
-                }
-            }
-
-            renderOutput();
-            copyBtn.disabled = false;
-            downloadBtn.disabled = false;
-        }
-
-        // 결과창 HTML 렌더링
-        function renderOutput() {
-            outputArea.innerHTML = '';
-            
-            structuredResults.forEach((item) => {
-                if (item.type === 'multi') {
-                    const wrapper = document.createElement('span');
-                    wrapper.className = 'inline-block mx-0.5 relative group';
-
-                    const select = document.createElement('select');
-                    select.className = 'bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 rounded px-1 text-xs font-bold cursor-pointer transition-colors focus:outline-none focus:ring-2 focus:ring-amber-500 appearance-none text-center min-w-[2rem]';
-                    select.title = `원문 한자: ${item.origin}`;
-
-                    item.options.forEach(opt => {
-                        const option = document.createElement('option');
-                        option.value = opt;
-                        option.textContent = opt;
-                        if (opt === item.selectedReading) option.selected = true;
-                        select.appendChild(option);
-                    });
-
-                    // 선택 변경 핸들러
-                    select.addEventListener('change', (e) => {
-                        item.selectedReading = e.target.value;
-                    });
-
-                    const tooltip = document.createElement('span');
-                    tooltip.className = 'absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 hidden group-hover:block bg-slate-800 text-white text-[10px] px-1.5 py-0.5 rounded shadow pointer-events-none z-10';
-                    tooltip.textContent = item.origin;
-
-                    wrapper.appendChild(select);
-                    wrapper.appendChild(tooltip);
-                    outputArea.appendChild(wrapper);
-                } else {
-                    const textNode = document.createTextNode(item.selectedReading);
-                    outputArea.appendChild(textNode);
-                }
-            });
-        }
-
-        // 최종 문자열 조립
-        function getFinalText() {
-            return structuredResults.map(item => item.selectedReading).join('');
-        }
-
-        // 클립보드 복사
-        copyBtn.addEventListener('click', async () => {
-            const text = getFinalText();
-            if (!text) return;
-            try {
-                await navigator.clipboard.writeText(text);
-                alert('클립보드에 바르게 복사되었습니다.');
-            } catch (err) {
-                alert('클립보드 복사에 실패했습니다.');
-            }
-        });
-
-        // 파일 다운로드
-        downloadBtn.addEventListener('click', () => {
-            const text = getFinalText();
-            if (!text) return;
-            const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `converted_${currentFileName || 'document'}.txt`;
-            link.click();
-            URL.revokeObjectURL(url);
-        });
-
-        // 데이터 비우기
-        clearBtn.addEventListener('click', () => {
-            inputText.value = '';
-            currentFileName = '';
-            fileInfo.classList.add('hidden');
-            processConversion();
-        });
-
-        // 파일 업로드 이벤트 연결
-        dropZone.addEventListener('click', () => fileInput.click());
-
-        fileInput.addEventListener('change', async (event) => {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            currentFileName = file.name;
-            fileNameDisplay.textContent = file.name;
-            fileInfo.classList.remove('hidden');
-
-            try {
-                const fileExtension = file.name.split('.').pop().toLowerCase();
-                let extractedText = '';
-
-                if (fileExtension === 'txt') {
-                    extractedText = await new Promise((resolve, reject) => {
-                        const reader = new FileReader();
-                        reader.onload = (e) => resolve(e.target.result);
-                        reader.onerror = reject;
-                        reader.readAsText(file, 'utf-8');
-                    });
-                } else if (fileExtension === 'docx') {
-                    const arrayBuffer = await file.arrayBuffer();
-                    const result = await mammoth.extractRawText({ arrayBuffer: arrayBuffer });
-                    extractedText = result.value;
-                } else {
-                    throw new Error('지원하지 않는 포맷입니다. TXT 혹은 DOCX 파일만 제공해 주세요.');
-                }
-
-                inputText.value = extractedText;
-                processConversion();
-            } catch (error) {
-                alert(`파일 읽기 실패: ${error.message}`);
-                currentFileName = '';
-                fileInfo.classList.add('hidden');
-            }
-        });
-    </script>
+    <script src="js/convert.js"></script>
+    <script src="js/count.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/hanja-ui.js"></script>
+    <script src="js/count-ui.js"></script>
 </body>
 </html>
