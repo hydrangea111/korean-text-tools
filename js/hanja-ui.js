@@ -19,7 +19,7 @@
             status: '한자 ➔ 한글', input: '원본 한자 입력', output: '실시간 변환 및 독음 선택 결과',
             placeholder: '여기에 한자가 섞인 텍스트를 입력하거나 문서를 업로드 하세요...',
             help: '다음자(두 가지 이상의 음을 가진 한자)는 노란 선택 상자로 표시되며, 눌러서 알맞은 음을 고를 수 있습니다.',
-            tip: '<strong>💡 변환 규칙:</strong> 단어 첫머리의 두음법칙(女子 → 여자), 모음·ㄴ 받침 뒤의 렬·률(比率 → 비율), 不 + ㄷ·ㅈ(不動 → 부동)을 자동으로 적용합니다. 音樂·十月처럼 글자별로 읽으면 틀리는 단어는 내장 단어 사전으로 처리합니다. 사전에 없는 한자는 <span class="unk-han">붉은 물결 밑줄</span>로 표시하고 그대로 둡니다.',
+            tip: '<strong>💡 변환 규칙:</strong> 단어 첫머리의 두음법칙(女子 → 여자), 모음·ㄴ 받침 뒤의 렬·률(比率 → 비율), 不 + ㄷ·ㅈ(不動 → 부동)을 자동으로 적용합니다. 音樂·十月처럼 글자별로 읽으면 틀리는 단어는 내장 단어 사전으로 처리합니다. 일본 신자체·중국 간체·이체자는 정자의 음으로 읽습니다(国→국, 发→발, 弁→변). 사전에 없는 한자는 <span class="unk-han">붉은 물결 밑줄</span>로 표시하고 그대로 둡니다.',
         },
         'hg2han': {
             status: '한글 ➔ 한자', input: '원본 한글 입력', output: '실시간 변환 및 한자 선택 결과',
@@ -106,7 +106,7 @@
     function polySelect(t, i) {
         const sel = document.createElement('select');
         sel.className = 'poly-select';
-        sel.title = `원문 한자: ${t.origin}`;
+        sel.title = t.variantOf ? `원문 한자: ${t.origin} (이체자 · ${t.variantOf}의 음)` : `원문 한자: ${t.origin}`;
         sel.dataset.i = i;
         t.labels.forEach((label, idx) => {
             const o = document.createElement('option');

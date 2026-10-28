@@ -63,13 +63,62 @@ def rank(ch):
     return (0 if ch in ks1001 else 1, grade.get(ch, 9), strokes.get(ch, 99), ord(ch))
 
 
+
+
+def targets(value):
+    """Unihan 변이 값(U+XXXX<출처> ...)에서 글자만 뽑는다."""
+    return [chr(int(x.split("<")[0][2:], 16)) for x in value.split()]
+
+
+# 변이형 그래프. 정확도 순으로 1단계(정자·간체·신자체·Z변이) → 2단계(의미 변이)
+graphs = ({}, {})
+for field, tier in (("kTraditionalVariant", 0), ("kSimplifiedVariant", 0), ("kZVariant", 0),
+                    ("kJapaneseOldVariant", 0), ("kJapaneseNewVariant", 0),
+                    ("kSemanticVariant", 1), ("kSpecializedSemanticVariant", 1)):
+    for ch, val in rows("Unihan_Variants.txt", field):
+        for t in targets(val):
+            if t == ch:
+                continue
+            graphs[tier].setdefault(ch, set()).add(t)
+            graphs[tier].setdefault(t, set()).add(ch)   # 방향과 상관없이 양쪽에서 찾는다
+
+# 독음이 없는 글자는 변이형의 독음을 빌린다. 더 정확한 단계를 먼저 쓰고, 연쇄는 3번까지 따라간다.
+derived = {}    # 한자 -> 독음을 빌려 온 글자
+for _ in range(3):
+    found = {}
+    for g in graphs:
+        for ch, nbrs in g.items():
+            if ch in readings or ch in derived or ch in found:
+                continue
+            donors = sorted((n for n in nbrs if n in readings), key=rank)
+            if donors:
+                found[ch] = donors
+    if not found:
+        break
+    for ch, donors in found.items():
+        merged = []
+        for d in donors:
+            merged += [r for r in readings[d] if r not in merged]
+        derived[ch] = donors[0]
+        readings.setdefault(ch, merged[:5])
+        variants.setdefault(ch, [])
+
+# 일본 신자체가 다른 글자의 고유 음을 이미 갖고 있어도(医 예) 구자체의 음(醫 의)을 앞에 둔다
+for ch, val in rows("Unihan_Variants.txt", "kJapaneseOldVariant"):
+    if ch not in readings or ch in derived:
+        continue
+    front = [r for t in targets(val) for r in readings.get(t, [])]
+    shared = [r for r in readings[ch] if r in front]     # 弁 변: 구자체 넷(辨辯瓣辦)과 겹치는 음이 우선
+    ordered = shared + front + readings[ch]
+    readings[ch] = list(dict.fromkeys(ordered))
+
 # 정방향: 한자 -> "음1,음2,..." (첫 번째가 기본음)
 chars = {ch: ",".join(r) for ch, r in sorted(readings.items(), key=lambda kv: ord(kv[0]))}
 
 # 역방향: 음절 -> 후보 한자 문자열 (흔한 순)
 rev = {}
 for ch, rs in readings.items():
-    if not is_candidate(ch):
+    if ch in derived or not is_candidate(ch):     # 빌려 온 독음은 한글→한자 후보에 넣지 않는다
         continue
     for syl in set(rs) | set(variants[ch]):
         rev.setdefault(syl, []).append(ch)
@@ -77,8 +126,8 @@ reverse = {syl: "".join(sorted(cs, key=rank)) for syl, cs in sorted(rev.items())
 
 out.parent.mkdir(parents=True, exist_ok=True)
 out.write_text(
-    json.dumps({"chars": chars, "reverse": reverse}, ensure_ascii=False, separators=(",", ":")),
+    json.dumps({"chars": chars, "reverse": reverse, "via": dict(sorted(derived.items()))}, ensure_ascii=False, separators=(",", ":")),
     encoding="utf-8",
 )
 multi = sum(1 for v in chars.values() if "," in v)
-print(f"한자 {len(chars)}자 (다음자 {multi}자), 음절 {len(reverse)}개 -> {out} ({out.stat().st_size // 1024} KB)")
+print(f"이체자 {len(derived)}자 추가, 한자 {len(chars)}자 (다음자 {multi}자), 음절 {len(reverse)}개 -> {out} ({out.stat().st_size // 1024} KB)")

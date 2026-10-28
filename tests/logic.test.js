@@ -120,3 +120,19 @@ test('글자수·줄 수', () => {
     assert.equal(stats('', 2).lines, 0);
     assert.equal(stats('', 2).neis, 0);
 });
+
+test('일본 신자체·중국 간체·이체자도 정자의 음으로 변환', () => {
+    assert.equal(toHangul('国学'), '국학');
+    assert.equal(toHangul('发展'), '발전');
+    assert.equal(toHangul('弁護'), '변호');
+    assert.equal(toHangul('医学'), '의학');
+    assert.equal(toHangul('台湾'), '대만');
+    assert.equal(toHangul('经济发展'), '경제발전');
+    assert.equal(toHangul('劳动'), '노동');
+    assert.equal(toHangul('女子'), '여자');
+});
+
+test('간체·신자체로 쓴 단어도 단어 사전을 거친다', () => {
+    assert.equal(toHangul('音乐'), '음악');
+    assert.equal(toHangul('乐器'), '악기');
+});

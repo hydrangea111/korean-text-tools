@@ -68,6 +68,7 @@
         let plain = '';
         let i = 0;
         let runStart = true;
+        const via = data.via || {};
 
         const flush = () => { if (plain) { tokens.push({ k: 'plain', text: plain }); plain = ''; } };
 
@@ -79,13 +80,15 @@
             let runEnd = i;
             while (runEnd < chars.length && HAN.test(chars[runEnd])) runEnd++;
 
-            let matched = 0;
+            // 간체·신자체·이체자는 정자로 바꿔서 단어 사전과 맞춰 본다 (音乐 → 音樂)
+            const key = chars.slice(i, runEnd).map(c => via[c] || c);
+            let matched = 0, hit = '';
             for (let len = Math.min(MAX_WORD, runEnd - i); len >= 2; len--) {
-                if (words[chars.slice(i, i + len).join('')]) { matched = len; break; }
+                const w = key.slice(0, len).join('');
+                if (words[w]) { matched = len; hit = w; break; }
             }
             if (matched) {
-                const w = chars.slice(i, i + matched).join('');
-                tokens.push({ k: 'han', origin: w, word: words[w], runStart });
+                tokens.push({ k: 'han', origin: chars.slice(i, i + matched).join(''), word: words[hit], runStart });
                 i += matched;
             } else {
                 const readings = readingsOf(data.chars, ch);
@@ -93,7 +96,7 @@
                     tokens.push({ k: 'unk', origin: ch, runStart });
                 } else {
                     tokens.push({
-                        k: 'han', origin: ch, readings, sel: 0, userSel: false, runStart,
+                        k: 'han', origin: ch, readings, variantOf: via[ch], sel: 0, userSel: false, runStart,
                         select: readings.length > 1,   // 다음자는 독음을 고를 수 있다
                     });
                 }

@@ -3,7 +3,7 @@
 한자 변환과 글자수·바이트 세기를 탭으로 묶은 정적 웹 도구입니다. GitHub Pages로 그대로 동작합니다.
 
 - **글자수 · 바이트** (첫 화면): 나이스(NEIS)식 / EUC-KR(기업)식 바이트를 동시에 계산
-- **한자 변환** (`#hanja`): 한자→한글(두음법칙, 렬·률, 不, 단어 사전), 한글→한자(후보 선택)
+- **한자 변환** (`#hanja`): 한자→한글(두음법칙, 렬·률, 不, 단어 사전, 일본 신자체·중국 간체·이체자), 한글→한자(후보 선택)
 
 ## 구조
 
@@ -25,6 +25,8 @@ node --test tests/logic.test.js          # 테스트
 python -m http.server                    # 로컬 확인 (data/*.json 을 fetch 하므로 서버 필요)
 python tools/build_dict.py <Unihan 폴더>  # 사전 재생성
 ```
+
+이체자는 Unihan의 변이 정보(정자·간체·신자체·Z변이 → 의미 변이, 최대 3단계 연쇄)로 정자의 음을 빌려 읽습니다. 의미 변이로 얻은 음은 부정확할 수 있어 다음자 선택 상자로 고를 수 있습니다.
 
 사전 원본: [Unicode Unihan](https://www.unicode.org/Public/UCD/latest/ucd/Unihan.zip) (`kHangul`), [이용 약관](https://www.unicode.org/terms_of_use.html)
 
