@@ -13,6 +13,16 @@
         toastTimer = setTimeout(() => { toastEl.hidden = true; }, 2200);
     };
 
+    // ---- 입력 내용 보관: 새로고침이나 실수로 나가도 이어서 쓰도록 이 브라우저에만 저장한다 ----
+    HT.store = {
+        get(key) {
+            try { return JSON.parse(localStorage.getItem('ht.' + key)); } catch (e) { return null; }
+        },
+        set(key, value) {
+            try { localStorage.setItem('ht.' + key, JSON.stringify(value)); } catch (e) { /* 저장소 차단·용량 초과: 저장만 건너뛴다 */ }
+        },
+    };
+
     // ---- 파일 읽기 (.txt는 UTF-8 → 실패 시 EUC-KR, .docx는 mammoth) ----
     HT.readTextFile = async function (file) {
         const ext = file.name.split('.').pop().toLowerCase();

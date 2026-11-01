@@ -37,6 +37,12 @@
     let currentFileName = '';
     let timer = 0;
 
+    // 지난번에 입력하던 내용을 되살린다 (?sample 로 열면 예시가 우선)
+    const saved = HT.store.get('hanja') || {};
+    if (saved.mode === 'hg2han') mode = 'hg2han';
+    originalChk.checked = !!saved.original;
+    if (typeof saved.text === 'string' && !location.search.includes('sample')) inputText.value = saved.text;
+
     // ---------- 모드 / 문구 ----------
     function applyModeText() {
         const t = TEXT[mode];
@@ -63,6 +69,7 @@
         clearTimeout(timer);
         convertNote.textContent = '';
         const text = inputText.value;
+        HT.store.set('hanja', { text, mode, original: originalChk.checked });
         if (!data) return;
         if (!text) {
             tokens = [];

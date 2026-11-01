@@ -13,8 +13,16 @@
     };
     const fmt = n => n.toLocaleString('ko-KR');
 
+    // 지난번에 입력하던 내용을 되살린다
+    const saved = HT.store.get('count') || {};
+    if (typeof saved.text === 'string') input.value = saved.text;
+    if (typeof saved.limit === 'string') limitValue.value = saved.limit;
+    if ([...limitBasis.options].some(o => o.value === saved.basis)) limitBasis.value = saved.basis;
+    if (typeof saved.lbTwo === 'boolean') lbTwo.checked = saved.lbTwo;
+
     function update() {
-        const s = HT.count.stats(input.value, lbTwo.checked ? 2 : 1);
+        HT.store.set('count', { text: input.value, limit: limitValue.value, basis: limitBasis.value, lbTwo: lbTwo.checked });
+        const s =HT.count.stats(input.value, lbTwo.checked ? 2 : 1);
         for (const k of Object.keys(out)) out[k].textContent = fmt(s[k]);
 
         const limit = parseInt(limitValue.value, 10);
