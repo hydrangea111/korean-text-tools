@@ -29,6 +29,7 @@
     padding: 0 0.15rem; margin: 0 0.1rem; font-size: 0.8rem; font-weight: 700; cursor: pointer;
 }
 .poly-select:focus { outline: 2px solid #f59e0b; }
+.maybe-han { text-decoration: underline dotted #d97706; text-underline-offset: 3px; }
 .unk-han { color: #be123c; text-decoration: underline wavy #fda4af; text-underline-offset: 3px; }
 
 /* 한글 → 한자 결과 */

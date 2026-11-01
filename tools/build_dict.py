@@ -63,6 +63,53 @@ def rank(ch):
     return (0 if ch in ks1001 else 1, grade.get(ch, 9), strokes.get(ch, 99), ord(ch))
 
 
+# Unihan에 빠졌거나 모자란 음의 보충표. 기존 음 뒤에 덧붙이므로 기본음은 그대로다.
+# 변이형(数 등)도 이 음을 이어받도록 이체자 계산보다 먼저 적용한다.
+EXTRA_READINGS = {
+    "數": ["촉"],              # 수 · 삭(頻數) · 촉(數罟)
+    "辦": ["변"],              # 판 · 변(懲辦)
+    "躕": ["주"],              # 躊躇 → 주저 (Unihan에 없음)
+    "內": ["나"], "大": ["태"], "寺": ["시"], "單": ["선"], "食": ["사"],
+    "覆": ["부"], "合": ["홉"], "曾": ["층"], "否": ["비"], "蓋": ["합"],
+    "畜": ["휵"], "著": ["착"], "伯": ["패"], "邪": ["야"], "差": ["치"],
+    "詰": ["길"], "徵": ["치"], "繁": ["파"], "尉": ["울"], "辟": ["피", "비"],
+}
+for ch, extra in EXTRA_READINGS.items():
+    readings[ch] = list(dict.fromkeys(readings.get(ch, []) + extra))
+    variants.setdefault(ch, [])
+
+# 대표음이 두음법칙형으로 올라와 있는 글자: 朗 낭/랑, 欄 난/란, 虜 노/로, 隆 융/륭, 類 유/류.
+# 단어 중간(明朗, 空欄)에서는 원음(랑, 란)으로 읽어야 하므로 두음법칙형은 빼고, 첫머리에서는 규칙이 바꿔 준다.
+# 빼 낸 음은 한글→한자 후보에 남도록 variants 로 옮긴다.
+Y_VOWELS = {2, 3, 6, 7, 12, 17, 20}      # ㅑ ㅒ ㅕ ㅖ ㅛ ㅠ ㅣ
+
+
+def dueum(syl):
+    code = ord(syl) - 0xAC00
+    if not 0 <= code < 11172:
+        return syl
+    lead, vowel, tail = code // 588, code % 588 // 28, code % 28
+    if lead not in (2, 5):                # ㄴ ㄹ
+        return syl
+    if vowel in Y_VOWELS:
+        return chr(0xAC00 + (11 * 21 + vowel) * 28 + tail)
+    return chr(0xAC00 + (2 * 21 + vowel) * 28 + tail) if lead == 5 else syl
+
+
+def prefer_original_sound():
+    for ch, rs in readings.items():
+        pool = rs + variants.get(ch, [])
+        swapped = {}
+        for a in rs:
+            b = next((b for b in pool if b != a and dueum(b) == a), None)
+            if b:
+                swapped[a] = b
+        if swapped:
+            readings[ch] = list(dict.fromkeys(swapped.get(r, r) for r in rs))
+            variants[ch] = [v for v in variants.get(ch, []) if v not in swapped.values()] + list(swapped)
+
+
+prefer_original_sound()
 
 
 def targets(value):
@@ -111,6 +158,8 @@ for ch, val in rows("Unihan_Variants.txt", "kJapaneseOldVariant"):
     shared = [r for r in readings[ch] if r in front]     # 弁 변: 구자체 넷(辨辯瓣辦)과 겹치는 음이 우선
     ordered = shared + front + readings[ch]
     readings[ch] = list(dict.fromkeys(ordered))
+    variants.setdefault(ch, [])
+prefer_original_sound()      # 구자체의 음을 앞에 붙이다가 두음법칙형(朗 낭)이 다시 앞서는 것을 바로잡는다
 
 # 정방향: 한자 -> "음1,음2,..." (첫 번째가 기본음)
 chars = {ch: ",".join(r) for ch, r in sorted(readings.items(), key=lambda kv: ord(kv[0]))}

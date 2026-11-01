@@ -4,7 +4,8 @@
     const HT = window.HT;
     const C = HT.convert;
 
-    const SAMPLE = '大韓民國의 首都는 서울이며, 音樂과 文學의 比率이 높다. 不動産 市場의 女子 老人 問題를 說明한다.';
+    // 대한민국 헌법 前文 (tests/cases.tsv 의 마지막 줄과 같은 글)
+    const SAMPLE = '前文\n悠久한 歷史와 傳統에 빛나는 우리 大韓國民은 3·1運動으로 建立된 大韓民國臨時政府의 法統과 不義에 抗拒한 4·19民主理念을 繼承하고, 祖國의 民主改革과 平和的 統一의 使命에 立脚하여 正義·人道와 同胞愛로써 民族의 團結을 鞏固히 하고, 모든 社會的 弊習과 不義를 打破하며, 自律과 調和를 바탕으로 自由民主的 基本秩序를 더욱 確固히 하여 政治·經濟·社會·文化의 모든 領域에 있어서 各人의 機會를 均等히 하고, 能力을 最高度로 發揮하게 하며, 自由와 權利에 따르는 責任과 義務를 完遂하게 하여, 안으로는 國民生活의 均等한 向上을 基하고 밖으로는 恒久的인 世界平和와 人類共榮에 이바지함으로써 우리들과 우리들의 子孫의 安全과 自由와 幸福을 永遠히 確保할 것을 다짐하면서 1948年 7月 12日에 制定되고 8次에 걸쳐 改正된 憲法을 이제 國民投票에 의하여 改正한다.';
     const EMPTY_HTML = '<span class="text-slate-400">텍스트를 입력하시면 변환 결과가 실시간으로 나타납니다.</span>';
 
     const $ = id => document.getElementById(id);
@@ -13,6 +14,7 @@
     const clearBtn = $('clearBtn'), sampleBtn = $('sampleBtn'), copyBtn = $('copyBtn'), downloadBtn = $('downloadBtn');
     const dropZone = $('dropZone'), fileInput = $('fileInput'), fileInfo = $('fileInfo'), fileNameDisplay = $('fileNameDisplay');
     const help = $('hanjaHelp'), tipBox = $('tipBox'), convertNote = $('convertNote');
+    const originalChk = $('originalChk'), originalWrap = $('originalWrap');
 
     const TEXT = {
         'han2hg': {
@@ -44,7 +46,10 @@
         inputText.placeholder = t.placeholder;
         help.textContent = t.help;
         tipBox.innerHTML = t.tip;
+        originalWrap.style.display = mode === 'han2hg' ? '' : 'none';   // Tailwind의 flex가 hidden 속성을 이기므로 style로 숨긴다
     }
+
+    originalChk.addEventListener('change', process);
 
     toggleBtn.addEventListener('click', () => {
         mode = mode === 'han2hg' ? 'hg2han' : 'han2hg';
@@ -66,13 +71,17 @@
             return;
         }
         tokens = mode === 'han2hg'
-            ? C.tokenizeHanja(text, data, words)
+            ? C.tokenizeHanja(text, data, words, { original: originalChk.checked })
             : C.tokenizeHangul(text, data);
         render();
         copyBtn.disabled = downloadBtn.disabled = false;
         if (mode === 'han2hg') {
             const unk = tokens.filter(t => t.k === 'unk').length;
-            if (unk) convertNote.textContent = `사전에 없어 변환하지 못한 한자 ${unk}개`;
+            const maybe = tokens.filter(t => t.uncertain).length;
+            const notes = [];
+            if (unk) notes.push(`사전에 없어 변환하지 못한 한자 ${unk}개`);
+            if (maybe) notes.push(`띄어쓰기 없이 붙은 한자라 단어 경계가 불확실한 곳 ${maybe}개 (점선 밑줄) — 두음법칙이 틀릴 수 있으니 확인하세요`);
+            convertNote.textContent = notes.join(' · ');
         }
     }
 
@@ -95,7 +104,15 @@
                 b.textContent = t.sel >= 0 ? t.cands[t.sel] : t.origin;
                 frag.appendChild(b);
             } else if (t.select) {
-                frag.appendChild(polySelect(t, i));
+                const el = polySelect(t, i);
+                if (t.uncertain) el.classList.add('maybe-han');
+                frag.appendChild(el);
+            } else if (t.uncertain) {
+                const s = document.createElement('span');
+                s.className = 'maybe-han';
+                s.title = '단어 경계가 불확실합니다 (두음법칙 확인)';
+                s.textContent = t.out;
+                frag.appendChild(s);
             } else {
                 frag.appendChild(document.createTextNode(t.out));
             }
@@ -248,10 +265,10 @@
     applyModeText();
     outputArea.innerHTML = '<span class="text-slate-400">사전을 불러오는 중…</span>';
 
-    Promise.all([fetch('data/hanja.json'), fetch('data/words.json')])
+    Promise.all([fetch('data/hanja.json'), fetch('data/words.lib.json'), fetch('data/words.json')])
         .then(rs => Promise.all(rs.map(r => { if (!r.ok) throw new Error(r.status); return r.json(); })))
-        .then(([d, w]) => {
-            data = d; words = w;
+        .then(([d, lib, manual]) => {
+            data = d; words = Object.assign({}, lib, manual);     // 손으로 고친 단어가 우선
             if (location.search.includes('sample')) inputText.value = SAMPLE;
             process();
             if (!inputText.value) outputArea.innerHTML = EMPTY_HTML;

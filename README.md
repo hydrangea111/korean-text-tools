@@ -28,6 +28,10 @@ python tools/build_dict.py <Unihan 폴더>  # 사전 재생성
 
 이체자는 Unihan의 변이 정보(정자·간체·신자체·Z변이 → 의미 변이, 최대 3단계 연쇄)로 정자의 음을 빌려 읽습니다. 의미 변이로 얻은 음은 부정확할 수 있어 다음자 선택 상자로 고를 수 있습니다.
 
+단어 사전: `data/words.lib.json`은 [libhangul](https://github.com/libhangul/libhangul)의 `hanja.txt`(BSD 3-clause, 고지는 `data/words.lib.LICENSE.txt`)에서 글자별 변환과 결과가 달라지는 단어만 추린 것입니다(약 7천 개). `node tools/build_words.js <hanja.txt>`로 다시 만들고, `node tools/eval_words.js <hanja.txt>`로 정확도를 잽니다(사전 단어 23만 개 기준 오답 2.98% → 0.03%). 남는 오답은 대부분 낱말 경계를 알 수 없는 긴 복합어 속의 두음법칙(國際勞動組合 → 로동)이며, 이런 곳은 화면에 점선 밑줄로 표시합니다. 손으로 고친 `data/words.json`이 항상 우선합니다. `tests/cases.tsv`는 직접 모은 회귀 사례집입니다.
+
+보정표: `tools/build_dict.py`의 `EXTRA_READINGS`(Unihan에 빠진 음, 예: 數 수·삭·촉)와 `data/words.json`(이름·단어)에 있습니다. 「원문 표기」를 켜면 두음법칙·렬률 규칙을 끄고(력사), 숫자 뒤 年(1948년)은 항상 두음법칙에서 제외합니다. 5자 이상 붙은 한자 속에서 두음법칙이 적용된 글자는 점선 밑줄로 표시합니다.
+
 사전 원본: [Unicode Unihan](https://www.unicode.org/Public/UCD/latest/ucd/Unihan.zip) (`kHangul`), [이용 약관](https://www.unicode.org/terms_of_use.html)
 
 ## 바이트 계산 기준

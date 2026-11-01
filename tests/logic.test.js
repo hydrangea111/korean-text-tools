@@ -7,7 +7,7 @@ const { stats, neisBytes, euckrBytes } = require('../js/count.js');
 
 const read = f => JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', f), 'utf8'));
 const data = read('hanja.json');
-const words = read('words.json');
+const words = Object.assign({}, read('words.lib.json'), read('words.json'));
 const toHangul = (s, opts) => textOf(tokenizeHanja(s, data, words, opts));
 
 test('기본 한자 → 한글', () => {
@@ -135,4 +135,44 @@ test('일본 신자체·중국 간체·이체자도 정자의 음으로 변환',
 test('간체·신자체로 쓴 단어도 단어 사전을 거친다', () => {
     assert.equal(toHangul('音乐'), '음악');
     assert.equal(toHangul('乐器'), '악기');
+});
+
+test('숫자 뒤 年, 단독 來하다는 두음법칙 제외', () => {
+    assert.equal(toHangul('1948年'), '1948년');
+    assert.equal(toHangul('來하도다'), '래하도다');
+    assert.equal(toHangul('來日'), '내일');
+});
+
+test('보정표: 이름·단어·다음자', () => {
+    assert.equal(toHangul('大韓民國臨時政府'), '대한민국임시정부');
+    assert.equal(toHangul('民主理念'), '민주이념');
+    assert.equal(toHangul('崔 麟 韓龍雲'), '최 린 한용운');
+    assert.equal(toHangul('懲辦'), '징변');
+    assert.equal(toHangul('躕躇'), '주저');
+    const num = tokenizeHanja('數', data, words)[0];
+    assert.deepEqual(num.readings, ['수', '삭', '촉']);
+    assert.ok(tokenizeHanja('辦', data, words)[0].select);
+});
+
+test('원문 표기는 두음법칙을 쓰지 않는다', () => {
+    assert.equal(toHangul('臨時 歷史 比率', { original: true }), '림시 력사 비률');
+    assert.equal(toHangul('臨時 歷史 比率'), '임시 역사 비율');
+    assert.equal(toHangul('韓龍雲', { original: true }), '한룡운');
+});
+
+test('붙여 쓴 긴 한자의 두음법칙은 불확실 표시', () => {
+    const t = tokenizeHanja('大韓民國歷史', data, words);
+    assert.ok(t.some(x => x.uncertain));
+    assert.ok(!tokenizeHanja('男女', data, words).some(x => x.uncertain));
+});
+
+test('회귀 사례집(tests/cases.tsv)', () => {
+    const fails = [];
+    for (const line of fs.readFileSync(path.join(__dirname, 'cases.tsv'), 'utf8').split(/\r?\n/)) {
+        if (!line) continue;
+        const [src, want] = line.split('\t');
+        const got = toHangul(src);
+        if (got !== want) fails.push(`${src}: 기대 ${want} / 실제 ${got}`);
+    }
+    assert.deepEqual(fails, []);
 });

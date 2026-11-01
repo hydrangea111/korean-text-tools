@@ -51,6 +51,10 @@ window.__toggleTheme=function(){var n=r.dataset.theme==='dark'?'light':'dark';tr
                     <i data-lucide="arrow-left-right" class="w-4 h-4"></i>
                     <span id="modeStatus">한자 ➔ 한글</span>
                 </button>
+                <label id="originalWrap" class="flex items-center gap-2 text-sm text-slate-600 cursor-pointer select-none" title="켜면 두음법칙과 렬·률→열·율 규칙을 쓰지 않습니다 (력사, 량심)">
+                    <input type="checkbox" id="originalChk" class="w-4 h-4 accent-blue-600 cursor-pointer">
+                    원문 표기 (두음법칙 없음)
+                </label>
             </div>
 
             <div class="mb-6">
